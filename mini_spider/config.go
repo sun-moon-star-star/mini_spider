@@ -2,8 +2,6 @@ package mini_spider
 
 import (
 	"encoding/json"
-	"errors"
-	"fmt"
 	"io/ioutil"
 	"os"
 
@@ -87,25 +85,29 @@ func readStringArrayFromJsonFile(filePath string) ([]string, error) {
 	return arr, nil
 }
 
-func checkConfig() error {
+func checkConfig() (err error) {
 	if config.ThreadCount == 0 {
-		return errors.New("threadCount must be greater than zero")
+		Panic("threadCount must be greater than zero")
 	}
 
 	if config.OutputDirectory == "" {
-		return errors.New("outputDirectory cannot be empty")
+		Panic("outputDirectory cannot be empty")
 	}
+
 	return nil
 }
 
-func initConfig() {
+func readConfFile() {
 	viper.SetConfigType("ini")
 	viper.SetConfigFile(config.ConfFile)
 
 	if err := viper.ReadInConfig(); err != nil {
-		err = fmt.Errorf("read in config(%s): %s", config.ConfFile, err.Error())
-		panic(Error(err))
+		Panic("read in config(%s): %s", config.ConfFile, err.Error())
 	}
+}
+
+func initConfigsFromConfFile() {
+	readConfFile()
 
 	config.MaxDepth = viper.GetUint32("spider.maxDepth")
 	config.CrawlInterval = viper.GetUint32("spider.crawlInterval")
@@ -114,19 +116,22 @@ func initConfig() {
 	config.URLListFile = viper.GetString("spider.urlListFile")
 	config.OutputDirectory = viper.GetString("spider.outputDirectory")
 	config.TargetURL = viper.GetString("spider.TargetURL")
+}
 
+func initURLList() {
 	var err error
 	config.InitialUrlList, err = readStringArrayFromJsonFile(config.URLListFile)
 	if err != nil {
-		err = fmt.Errorf("initial urllist(%s): %s", config.URLListFile, err.Error())
-		panic(Error(err))
+		Panic("initial urllist(%s): %s", config.URLListFile, err.Error())
 	}
+}
 
-	err = checkConfig()
-	if err != nil {
-		err = fmt.Errorf("check config(%+v): %s", config, err.Error())
-		panic(Error(err))
-	}
+func initConfig() {
+	initConfigsFromConfFile()
+
+	initURLList()
+
+	checkConfig()
 
 	Info("config(%s): %+v", config.ConfFile, config)
 }

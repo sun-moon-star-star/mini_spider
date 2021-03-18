@@ -16,6 +16,6 @@
 *.bak
 
 output
-log
+logger.go
 go.mod
 go.sum
